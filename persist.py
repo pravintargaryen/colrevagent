@@ -1,17 +1,7 @@
 import os
-import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-
-
-if len(sys.argv) < 2:
-    print("Usage: python script.py <your prompt>")
-    sys.exit(1)
-
-
-user_prompt = " ".join(sys.argv[1:])
-
 
 
 system_prompt = """
@@ -36,24 +26,43 @@ Important guidelines:
 - Do not fabricate results. Always rely on the Crossref API output.
 - Keep responses user-friendly, not overly technical.
 - Encourage iterative search by engaging the user in refining their queries.
- """
-
-messages = [
-    types.Content(role="user", parts=[types.Part(text=user_prompt)]),
-]
-
+"""
 
 load_dotenv()
-
 api_key = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=api_key)
 
-response = client.models.generate_content(
-    model='gemini-2.0-flash-001', contents=messages, 
-    config=types.GenerateContentConfig(system_instruction=system_prompt),
-)
+
+def ask_llm(query: str) -> str:
+    """Send a query to Gemini and return the response text."""
+    messages = [
+        types.Content(role="user", parts=[types.Part(text=query)]),
+    ]
+
+    response = client.models.generate_content(
+        model='gemini-2.0-flash-001',
+        contents=messages,
+        config=types.GenerateContentConfig(system_instruction=system_prompt),
+    )
+
+    return response.text
 
 
-print(response.text)
-print('prompt_tokens', response.usage_metadata.prompt_token_count)
-print('response_tokens', response.usage_metadata.candidates_token_count)
+def run():
+    """Interactive loop."""
+    print("🔎 Crossref Search Agent (type 'exit' to quit)\n")
+
+    while True:
+        user_input = input("\nYour query: ")
+        if user_input.lower().strip() == "exit":
+            print("Goodbye!")
+            break
+
+        result = ask_llm(user_input)
+        print("\n--- Results ---")
+        print(result)
+
+
+# ✅ Only run loop when script is executed directly
+if __name__ == "__main__":
+    run()
