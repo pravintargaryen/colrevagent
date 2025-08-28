@@ -49,7 +49,7 @@ def ask_llm(query: str) -> str:
 
 
 def run():
-    """Interactive loop."""
+    
     print("🔎 Crossref Search Agent (type 'exit' to quit)\n")
 
     while True:
@@ -63,6 +63,6 @@ def run():
         print(result)
 
 
-# ✅ Only run loop when script is executed directly
+
 if __name__ == "__main__":
     run()
