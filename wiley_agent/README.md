@@ -4,7 +4,7 @@
 
 ## Run the following command
 
-'''
+```
 adk web
-'''
+```
 
