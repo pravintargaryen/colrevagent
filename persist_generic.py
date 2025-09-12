@@ -1,18 +1,12 @@
 import os
-import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-
-if len(sys.argv) < 2:
-    print("Usage: python script.py <your prompt>")
-    sys.exit(1)
-
-
-user_prompt = " ".join(sys.argv[1:])
-
-
+# Load environment variables
+load_dotenv()
+api_key = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=api_key)
 
 system_prompt = """
 You are a helpful AI search assistant that uses the Crossref API to retrieve scholarly articles.
@@ -36,24 +30,36 @@ Important guidelines:
 - Do not fabricate results. Always rely on the Crossref API output.
 - Keep responses user-friendly, not overly technical.
 - Encourage iterative search by engaging the user in refining their queries.
- """
+"""
 
-messages = [
-    types.Content(role="user", parts=[types.Part(text=user_prompt)]),
-]
+# Store conversation history
+messages = []
 
+print("🔎 Crossref Search Agent (type 'exit' to quit)")
+while True:
+    user_input = input("\nYour query: ")
+    if user_input.lower() in {"exit", "quit"}:
+        print("Goodbye 👋")
+        break
 
-load_dotenv()
+    # Add user message to conversation history
+    messages.append(types.Content(role="user", parts=[types.Part(text=user_input)]))
 
-api_key = os.getenv("GEMINI_API_KEY")
-client = genai.Client(api_key=api_key)
+    # Send to LLM
+    response = client.models.generate_content(
+        model="gemini-2.0-flash-001",
+        contents=messages,
+        config=types.GenerateContentConfig(system_instruction=system_prompt),
+    )
 
-response = client.models.generate_content(
-    model='gemini-2.0-flash-001', contents=messages, 
-    config=types.GenerateContentConfig(system_instruction=system_prompt),
-)
+    # Show response
+    print("\nAssistant:\n", response.text)
 
+    # Add assistant response to history
+    messages.append(types.Content(role="model", parts=[types.Part(text=response.text)]))
 
-print(response.text)
-print('prompt_tokens', response.usage_metadata.prompt_token_count)
-print('response_tokens', response.usage_metadata.candidates_token_count)
+    # Optional: token usage
+    print(
+        f"[tokens used: prompt={response.usage_metadata.prompt_token_count}, "
+        f"response={response.usage_metadata.candidates_token_count}]"
+    )
